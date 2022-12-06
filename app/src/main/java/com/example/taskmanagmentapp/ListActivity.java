@@ -11,12 +11,11 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.RadioGroup;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
-import com.example.taskmanagmentapp.dataManager.PostBody;
-import com.example.taskmanagmentapp.dataManager.Task;
-import com.example.taskmanagmentapp.dataManager.TaskParser;
+import com.example.taskmanagmentapp.dataManager.AnimeRecord;
+import com.example.taskmanagmentapp.dataManager.AnimeParser;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
@@ -28,7 +27,7 @@ import retrofit2.Response;
 
 public class ListActivity extends AppCompatActivity {
 
-    TaskParser taskParser;
+    AnimeParser animeParser;
 
     ListView listView;
     FloatingActionButton addButton;
@@ -43,7 +42,7 @@ public class ListActivity extends AppCompatActivity {
         addButton = findViewById(R.id.floatingBt);
 
 
-        taskParser = new TaskParser(intent.getStringExtra("url"));
+        animeParser = new AnimeParser(intent.getStringExtra("url"));
         parseTasks();
 
         addButton.setOnClickListener(new View.OnClickListener() {
@@ -55,10 +54,10 @@ public class ListActivity extends AppCompatActivity {
 
     }
 
-    void parseTasks(){
-        taskParser.getaPie().getAllTasks().enqueue(new Callback<List<Task>>() {
+    void parseTasks() {
+        animeParser.getaPie().getAllTasks().enqueue(new Callback<List<AnimeRecord>>() {
             @Override
-            public void onResponse(Call<List<Task>> call, Response<List<Task>> response) {
+            public void onResponse(Call<List<AnimeRecord>> call, Response<List<AnimeRecord>> response) {
                 if (response.isSuccessful()) {
                     populateListView(response.body());
                 } else {
@@ -67,22 +66,22 @@ public class ListActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<Task>> call, Throwable t) {
+            public void onFailure(Call<List<AnimeRecord>> call, Throwable t) {
                 Log.e("ListActivity", t.getMessage());
                 Toast.makeText(ListActivity.this, "RequestError", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    void populateListView(List<Task> taskList) {
-        TaskAdapter taskAdapter = new TaskAdapter(getApplicationContext(), R.layout.item_list, taskList, taskParser, new Callable<Void>() {
+    void populateListView(List<AnimeRecord> animeRecordList) {
+        AnimeAdapter animeAdapter = new AnimeAdapter(getApplicationContext(), R.layout.item_list, animeRecordList, animeParser, new Callable<Void>() {
             @Override
             public Void call() throws Exception {
                 parseTasks();
                 return null;
             }
         });
-        listView.setAdapter(taskAdapter);
+        listView.setAdapter(animeAdapter);
     }
 
     private void showAddDialog() {
@@ -91,54 +90,41 @@ public class ListActivity extends AppCompatActivity {
         dialog.setCancelable(true);
         dialog.setContentView(R.layout.dialog_add);
 
-        final EditText textET = dialog.findViewById(R.id.textET);
-        final RadioGroup radioGroup = dialog.findViewById(R.id.radio);
+        final EditText nameET = dialog.findViewById(R.id.nameET);
+        final EditText descriptionET = dialog.findViewById(R.id.descriptionET);
+        final SeekBar seekBar = dialog.findViewById(R.id.seekBar);
         final Button button = dialog.findViewById(R.id.button);
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int checked = radioGroup.getCheckedRadioButtonId();
-                if (checked == -1) {
-                    Toast.makeText(ListActivity.this, "Select importance", Toast.LENGTH_SHORT).show();
-                }else{
-                    Task task = new Task();
-                    task.setText(textET.getText().toString());
-                    switch (checked){
-                        case R.id.radioButton0:
-                            task.setImportance(0);
-                            break;
-                        case R.id.radioButton1:
-                            task.setImportance(1);
-                            break;
-                        case R.id.radioButton2:
-                            task.setImportance(2);
-                            break;
+                AnimeRecord animeRecord = new AnimeRecord();
+                animeRecord.setName(nameET.getText().toString());
+                animeRecord.setDescription(descriptionET.getText().toString());
+                animeRecord.setReview(seekBar.getProgress());
 
+                animeParser.getaPie().postTask(animeRecord).enqueue(new Callback<AnimeRecord>() {
+                    @Override
+                    public void onResponse(Call<AnimeRecord> call, Response<AnimeRecord> response) {
+                        if (response.isSuccessful()) {
+                            parseTasks();
+                            dialog.dismiss();
+                        } else {
+                            Log.d("Dialog", call.request().toString());
+                            Log.d("Dialog", call.request().headers().toString());
+                            Log.d("Dialog", call.request().body().toString());
+                            Log.d("Dialog", response.message().toString());
+                            Log.d("Dialog", Integer.toString(response.code()));
+                        }
                     }
-                    taskParser.getaPie().postTask(task).enqueue(new Callback<Task>() {
-                        @Override
-                        public void onResponse(Call<Task> call, Response<Task> response) {
-                            if(response.isSuccessful()) {
-                                parseTasks();
-                                dialog.dismiss();
-                            }else{
-                                Log.d("Dialog",call.request().toString());
-                                Log.d("Dialog",call.request().headers().toString());
-                                Log.d("Dialog",call.request().body().toString());
-                                Log.d("Dialog",response.message().toString());
-                                Log.d("Dialog",Integer.toString(response.code()));
-                            }
-                        }
 
-                        @Override
-                        public void onFailure(Call<Task> call, Throwable t) {
-                            Log.e("Dialog", t.getMessage());
-                            Toast.makeText(ListActivity.this, "RequestError", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                    @Override
+                    public void onFailure(Call<AnimeRecord> call, Throwable t) {
+                        Log.e("Dialog", t.getMessage());
+                        Toast.makeText(ListActivity.this, "RequestError", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
-                }
 
             }
         });

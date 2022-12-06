@@ -3,20 +3,20 @@ package com.example.taskmanagmentapp.dataManager;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class TaskParser {
+public class AnimeParser {
     Retrofit retrofit;
-    private TaskInterface aPie;
+    private AnimeInterface aPie;
 
-    public TaskParser(String serverUrl) {
+    public AnimeParser(String serverUrl) {
         retrofit = new Retrofit.Builder()
-                .baseUrl(serverUrl+"/demo/")
+                .baseUrl(serverUrl+"/anime/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        aPie = retrofit.create(TaskInterface.class);
+        aPie = retrofit.create(AnimeInterface.class);
     }
 
-    public TaskInterface getaPie() {
+    public AnimeInterface getaPie() {
         return aPie;
     }
 }
